@@ -1,0 +1,15 @@
+{
+    "name": "mip-list-iwanvi",
+    "version": "1.0.0",
+    "description": "MIP-list组件扩展重绘HTML标签",
+    "contributors": [
+        {
+            "name": "zhangmengcheng",
+            "email": "sciinfojs@163.com",
+            "url": "https://www.mipengine.org"
+        }
+    ],
+    "engines": {
+        "mip": ">=1.1.0"
+    }
+}
