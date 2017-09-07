@@ -1,12 +1,17 @@
 /**
- * @file mip-list-iwanvi 组件
- * @author
+ * @file mip-iwanvi-list 组件
+ * @author zhangmc to:重绘fetchJsonp header cookie对象[cookie暂时不支持跨域]
  */
+
 define(function (require) {
 
     var customElement = require('customElement').create();
     var templates = require('templates');
     var fetchJsonp = require('fetch-jsonp');
+    var util = require('util');
+    var $ = require('zepto');
+    var customStorage = util.customStorage(0);
+    var $ = require('zepto');
 
     /**
      * [renderTemplate 获取模板]
@@ -32,14 +37,15 @@ define(function (require) {
      */
     function render(htmls) {
         var self = this;
-        //var fragment = document.createDocumentFragment();
-        //htmls.map(function (html) {
-            //var node = document.createElement('div');
-            //node.innerHTML = html;
-            //node.setAttribute('role', 'listitem');
-            //fragment.appendChild(node);            
-        //});
-        //self.container.appendChild(fragment);
+        var fragment = document.createDocumentFragment();
+        htmls.map(function (html) {
+            var node = document.createElement('div');
+            node.innerHTML = html;
+            node.setAttribute('role', 'listitem');
+
+            fragment.appendChild(node);
+        });
+        self.container.appendChild(fragment);
     }
 
     /**
@@ -54,7 +60,7 @@ define(function (require) {
             return;
         }
 
-        self.button = document.querySelector('.mip-list-more');
+        self.button = document.querySelector('.mip-iwanvi-list-more');
         self.button.innerHTML = '加载中...';
 
         var url = getUrl(src, self.pnName, self.pn++);
@@ -85,11 +91,12 @@ define(function (require) {
      * @param  {string}  src    原始 url
      * @param  {string}  pnName 翻页字段名
      * @param  {integer} pn     页码
+	 * @param  {string}  _header cookie
      * @return {string}         拼接好的 url
      */
     function getUrl(src, pnName, pn) {
         if (!src) {
-            console.error('mip-list 的 src 属性不能为空');
+            console.error('mip-iwanvi-list 的 src 属性不能为空');
             return;
         }
         if (!pnName || !pn) {
@@ -106,6 +113,7 @@ define(function (require) {
 
         return url;
     }
+
 
     /**
      * 构造元素，只会运行一次
@@ -135,7 +143,7 @@ define(function (require) {
         var src = element.getAttribute('src') || '';
         var url = src;
         if (!src) {
-            console.error('mip-list 的 src 属性不能为空');
+            console.error('mip-iwanvi-list 的 src 属性不能为空');
         }
 
         self.pnName = element.getAttribute('pnName') || 'pn';
@@ -148,9 +156,22 @@ define(function (require) {
             });
         }
 
+        var headerdata =  element.getAttribute('data-header') || '';
+        // set
+        customStorage.set('mipreadercookie', headerdata);
+
+        var mipcookie = customStorage.get('mipreadercookie');
         if (element.hasAttribute('preLoad')) {
             url = getUrl(src, self.pnName, self.pn++);
             fetchJsonp(url, {
+                method: 'POST',
+                crossDomain: true,
+                headers: {
+                    'Content-Type': 'json',
+                    'cookie': mipcookie
+                },
+                mode: 'basic',
+                credentials: 'same-origin',
                 jsonpCallback: 'callback'
             }).then(function (res) {
                 return res.json();
