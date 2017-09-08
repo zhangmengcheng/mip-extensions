@@ -9,7 +9,6 @@ define(function (require) {
     var templates = require('templates');
     var fetchJsonp = require('fetch-jsonp');
     var util = require('util');
-    var $ = require('zepto');
     var customStorage = util.customStorage(0);
     var $ = require('zepto');
 
@@ -52,8 +51,9 @@ define(function (require) {
      * [pushResult push结果函数]
      *
      * @param  {string} src ajax请求的url
+     * @param  {string} mipcookie mipcookie
      */
-    function pushResult(src) {
+    function pushResult(src, mipcookie) {
         var self = this;
 
         if (self.isEnd) {
@@ -66,23 +66,31 @@ define(function (require) {
         var url = getUrl(src, self.pnName, self.pn++);
 
         fetchJsonp(url, {
-            jsonpCallback: 'callback'
-        }).then(function (res) {
-            return res.json();
-        }).then(function (data) {
-            if (!data.status && data.data) {
-                renderTemplate.call(self, data.data);
-                self.button.innerHTML = '点击查看更多';
-                if (data.data.isEnd) {
-                    self.isEnd = data.isEnd;
-                    self.button.innerHTML = '已经加载完毕';
-                    self.button.removeAttribute('on');
+                method: 'POST',
+                crossDomain: true,
+                headers: {
+                    'Content-Type': 'json',
+                    'cookie': mipcookie
+                },
+                mode: 'basic',
+                credentials: 'same-origin',
+                jsonpCallback: 'callback'
+            }).then(function (res) {
+                return res.json();
+            }).then(function (data) {
+                if (!data.status && data.data) {
+                    renderTemplate.call(self, data.data);
+                    self.button.innerHTML = '点击查看更多';
+                    if (data.data.isEnd) {
+                        self.isEnd = data.isEnd;
+                        self.button.innerHTML = '已经加载完毕';
+                        self.button.removeAttribute('on');
+                    }
                 }
-            }
-            else {
-                self.button.innerHTML = '加载失败';
-            }
-        });
+                else {
+                    self.button.innerHTML = '加载失败';
+                }
+            });
     }
 
     /**
@@ -149,18 +157,24 @@ define(function (require) {
         self.pnName = element.getAttribute('pnName') || 'pn';
         self.pn = element.getAttribute('pn') || 1;
 
+        var headerdata =  element.getAttribute('data-header') || '';
+        var mipcookie = customStorage.get('mipreadercookie');
+        if (mipcookie) {
+            // set 目前为true即可
+            customStorage.set('mipreadercookie', headerdata);
+        }
+        else {
+            customStorage.set('mipreadercookie', headerdata);
+        }
+        mipcookie = customStorage.get('mipreadercookie');
+
         // 有查看更多属性的情况
         if (element.hasAttribute('has-more')) {
             self.addEventAction('more', function () {
-                pushResult.call(self, src);
+                pushResult.call(self, src, mipcookie);
             });
         }
 
-        var headerdata =  element.getAttribute('data-header') || '';
-        // set
-        customStorage.set('mipreadercookie', headerdata);
-
-        var mipcookie = customStorage.get('mipreadercookie');
         if (element.hasAttribute('preLoad')) {
             url = getUrl(src, self.pnName, self.pn++);
             fetchJsonp(url, {
